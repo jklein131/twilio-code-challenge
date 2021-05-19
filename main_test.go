@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 type coords struct {
@@ -9,9 +10,10 @@ type coords struct {
 	long float64
 }
 
+var DelrayBeachFL = coords{lat: 26.45151095322035, long: -80.17595111231378}
+var DeerFieldBeachFL = coords{lat: 26.315803607717026, long: -80.0987914408342}
+
 func TestDistanceMock(t *testing.T) {
-	DelrayBeachFL := coords{lat: 26.45151095322035, long: -80.17595111231378}
-	DeerFieldBeachFL := coords{lat: 26.315803607717026, long: -80.0987914408342}
 	locator := &MockLocator{}
 	min, err := locator.DistanceETAMin(DelrayBeachFL.lat, DelrayBeachFL.long, DeerFieldBeachFL.lat, DeerFieldBeachFL.long)
 	if err != nil {
@@ -34,5 +36,33 @@ func TestTwilioMock(t *testing.T) {
 	}
 	if recv != "Hello world" {
 		t.Fatal("did not recieve correct message back")
+	}
+}
+
+func TestSendThrough(t *testing.T) {
+	service := &MockTwilio{}
+	serviceLoc := &MockLocator{}
+	ls := NewLateService(service, serviceLoc)
+	timeNow := time.Now()
+	id := "123"
+	cellNumber := "xxx-xxx-xxxx"
+	err := ls.Handle(
+		&LateServiceRequest{
+			orderID:         &id,
+			customerLat:     &DeerFieldBeachFL.lat,
+			customerLong:    &DeerFieldBeachFL.long,
+			deliveryLat:     &DelrayBeachFL.lat,
+			deliveryLong:    &DeerFieldBeachFL.long,
+			estDeliveryTime: &timeNow,
+			cellNumber:      &cellNumber,
+			// if we try and deliver it now, it's always going to be late
+		})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// we should have recieved an SMS
+	_, err = service.PopLastMessageSent()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

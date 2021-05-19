@@ -55,8 +55,8 @@ func (s *LateService) Handle(req *LateServiceRequest) error {
 		return err
 	}
 
-	if (*req.estDeliveryTime).Add(-dMin).After(time.Now()) {
-		msg := fmt.Sprintf("Your delivery %v will be late by %.0f min\n", *req.orderID, (req.estDeliveryTime).Sub(time.Now().Add(dMin)).Minutes())
+	if time.Now().Add(dMin).After((*req.estDeliveryTime)) {
+		msg := fmt.Sprintf("Your delivery %v will be late by %.0f min\n", *req.orderID, time.Now().Add(dMin).Sub((*req.estDeliveryTime)).Minutes())
 		err := s.smsService.SendSMS(msg, *req.cellNumber)
 		if err != nil {
 			return err
